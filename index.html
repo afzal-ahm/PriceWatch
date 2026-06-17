@@ -653,8 +653,13 @@
       font-family: inherit;
     }
 
-    .btn-submit:hover {
+    .btn-submit:hover:not(:disabled) {
       opacity: 0.9;
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
 
     .form-note {
@@ -972,7 +977,8 @@
       <div>
         <div class="alert-title">Price drop detected — Amazon India</div>
         <div class="alert-body">Competitor "TechZone Store" dropped <strong>Samsung Galaxy Buds2</strong> from ₹5,999 →
-          <strong>₹4,799</strong></div>
+          <strong>₹4,799</strong>
+        </div>
       </div>
       <div class="alert-time">Just now</div>
     </div>
@@ -1125,20 +1131,24 @@
       <p class="spots-label">3 of 10 spots taken</p>
 
       <form class="beta-form" onsubmit="handleSubmit(event)">
+        <!-- FormSubmit Configuration -->
+        <input type="hidden" name="_captcha" value="false">
+        <input type="hidden" name="_subject" value="New PriceWatch Beta Request!">
+
         <div class="form-row">
           <div class="form-group">
             <label for="name">Your name</label>
-            <input type="text" id="name" placeholder="Rahul Sharma" required />
+            <input type="text" id="name" name="name" placeholder="Rahul Sharma" required />
           </div>
           <div class="form-group">
             <label for="email">Email address</label>
-            <input type="email" id="email" placeholder="rahul@yourstore.com" required />
+            <input type="email" id="email" name="email" placeholder="rahul@yourstore.com" required />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label for="platform">Primary platform</label>
-            <select id="platform" required>
+            <select id="platform" name="platform" required>
               <option value="">Select platform</option>
               <option>Amazon India</option>
               <option>Flipkart</option>
@@ -1149,7 +1159,7 @@
           </div>
           <div class="form-group">
             <label for="products">Approx. products you sell</label>
-            <select id="products">
+            <select id="products" name="products">
               <option value="">Select range</option>
               <option>1–50 products</option>
               <option>50–200 products</option>
@@ -1226,7 +1236,7 @@
           <li>Unlimited users</li>
           <li>Dedicated support</li>
         </ul>
-        <a href="mailto:pricewatch@lucidecore.com" class="pricing-btn pricing-btn-ghost">Contact Us →</a>
+        <a href="#beta" class="pricing-btn pricing-btn-ghost">Contact Us →</a>
       </div>
     </div>
   </section>
@@ -1298,25 +1308,40 @@
     // Form submit
     function handleSubmit(e) {
       e.preventDefault();
-      const email = document.getElementById('email').value;
-      const name = document.getElementById('name').value;
-      const platform = document.getElementById('platform').value;
-      const products = document.getElementById('products').value;
-
-      // Send to formspree (free form handler) — replace YOUR_FORM_ID
       const form = e.target;
-      form.style.display = 'none';
+      const submitBtn = form.querySelector('.btn-submit');
+      const originalBtnText = submitBtn.textContent;
 
-      const success = document.getElementById('success');
-      success.style.display = 'block';
-      document.getElementById('confirmed-email').textContent = email;
+      // Disable button and show sending state
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending...';
 
-      // Open mailto as fallback notification to you
-      const subject = encodeURIComponent(`PriceWatch Beta Request — ${name}`);
-      const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\nPlatform: ${platform}\nProducts: ${products}`);
-      setTimeout(() => {
-        window.location.href = `mailto:pricewatch@lucidecore.com?subject=${subject}&body=${body}`;
-      }, 1000);
+      const email = document.getElementById('email').value;
+      const formData = new FormData(form);
+
+      // Submit form using FormSubmit AJAX endpoint
+      fetch("https://formsubmit.co/ajax/pricewatch@lucidecore.com", {
+        method: "POST",
+        body: formData
+      })
+        .then(response => {
+          if (response.ok) {
+            form.style.display = 'none';
+            const success = document.getElementById('success');
+            success.style.display = 'block';
+            document.getElementById('confirmed-email').textContent = email;
+          } else {
+            throw new Error('Form submission failed');
+          }
+        })
+        .catch(error => {
+          console.error('Error submitting form:', error);
+          alert('Something went wrong. Please try again or reach out to us at pricewatch@lucidecore.com.');
+
+          // Re-enable submit button
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalBtnText;
+        });
     }
 
     // Animate alert card on load
